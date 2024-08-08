@@ -35,7 +35,8 @@ spec:
 - It has 4 top level required fields
     - `apiVersion` - string
         - depending upon the kind of K8s object being created, use the right API version
-        - - `kind` - the kind of K8s object being created (string)
+          ![API Version](Images/k8_intro/k8_YAML_Definition1.png)
+        - `kind` - the kind of K8s object being created (string)
 - `metadata` - metadata about the K8s object being created (dictionary)
     - `name` - name of the K8s object (string)
     - `labels` - key-value pairs for grouping K8s objects after creation (dictionary)
@@ -145,19 +146,24 @@ spec:
 # Networking in Kubernetes
 
 # Networking in a single node
+![Networking Single Node](./Images/k8_intro/k8_Networking_in_Kubernetes_Single_node.png)
 
 - When K8s is installed on a host, it creates an internal private network in the range `10.244.0.0/16` and every pod on the host gets an IP address on this network.
 - The pods can communicate with each other using IP addresses but it’s not a good idea as IP addresses change when pods are restarted.
 - **Every node gets an IP address on the external network** (not the K8s internal network)
 
 ## Networking in a cluster
+
+![Networking in a cluster](./Images/k8_intro/k8_Networking_in_Kubernetes_Networking_in_cluster.png)
+
+
 - When we have multiple nodes in the cluster, each of them have a unique IP in the external network.
 - Each node sets up their own internal private network, which means they could be using overlapping CIDRs. This could lead to IP conflicts between pods. In this case, pods won’t be able to communicate across nodes.
 - When we setup a cluster, Kubernetes expects us to setup the networking to fulfill certain requirements:
     - All pods should be able to communicate with each other without configuring a NAT
     - All nodes should be able to communicate with all the pods and vice-versa without a NAT
 - There are multiple third party networking solutions for K8s networking that we can use. This makes each node use a different CIDR for its internal private network thus allows each proper communication between the pods.
-
+![Kubernetes cluster](./Images/k8_intro/k8_Networking_in_Kubernetes_k8_cluster.png)
 # Kubectl Commands
 
 - `kubectl` can be replaced with `k` by using an alias
