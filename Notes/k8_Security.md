@@ -8,7 +8,8 @@
     - **Users** - User accounts with which the user has access to the clusters. These user accounts may have different privilege on different clusters.
     - **Contexts** - Define which user account will be used to access which cluster.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5291d3fe-98d6-4a0e-8a42-6d8f6ff315bb/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_kubeconfig.png)
+  
     
 - KubeConfig defines what user accounts have access to what clusters. It is not a configuration to create user accounts or clusters. It just defines which user account will be used by the `kubectl` command to access which cluster. This way we don’t have to specify these parameters in the `kubectl` commands.
 
@@ -136,19 +137,19 @@ users:
 
 All the core functionalities exist in this API group. All the resources (functionalities) are scattered in this group.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/74a4aa63-96fc-41d3-a341-cd8105786475/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API1.png)
 
 ## Named API group (`/apis`)
 
 The named API group is organized into subgroups (resources) based on the category. The newer features in k8s and going forward all the incoming features will be made available in this group. Several actions (verbs) can be performed on the resources.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c08bd6c6-989e-4af5-98e5-6b9dac81f766/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API2.png)
 
 # Authenticating to Kube-ApiServer
 
 Most of the API endpoint will require you to authenticate to the `kube-apiserver`. This means passing the login credentials in the curl command. Alternatively, you can setup a proxy client to by running the command `kubectl proxy` which will automatically proxy your API requests and add the credentials from the [KubeConfig](https://www.notion.so/KubeConfig-c99bacd10778413fbcb4f580dd0b9dbe?pvs=21)  file on your local system. So, you no longer need to pass the authentication details in every curl command.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f458ab4f-eac0-4786-84be-26b66c55bdc2/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API3.png)
 
 ### Examples
 
@@ -157,15 +158,15 @@ Most of the API endpoint will require you to authenticate to the `kube-apiserver
 
 # API Versions
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f2f5dd32-5e1c-4034-b57c-b2cc761bdce6/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API4.png)
 
 An API group can have multiple versions supported at the same time. Either of these API versions can be used to create a resource. But, when you query the resource it checks for it in the **Preferred API version**. Also, when a resource is created in an API version other than the **Storage API version**, it is converted to the storage API version before storing in the `etcd` database. Usually, the stable API version is the Preferred and Storage API version.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e75988f7-e91c-4c7d-a5e3-b52912205d1e/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API5.png)
 
 Since alpha versions are not enabled by default, we can enable them by editing the `kube-apiserver`'s config.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7cb720d3-2dce-49b4-ac23-8a077382d8c8/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API6.png)
 
 ### C**heck the preferred version for an API**
 
@@ -203,7 +204,7 @@ The output will be like this:
 
 In the example below, the resource `webinar` can only be removed by incrementing the version from `v1alpha1` to `v1alpha2`. But both the versions will be supported because otherwise, all the usage of `v1alpha1` will have to be incremented. But, the preferred/supported version can be `v1alpha2`.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cf527467-6f74-4710-908a-26891d1a2383/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API7.png)
 
 ### Rule 2
 
@@ -212,9 +213,9 @@ In the example below, the resource `webinar` can only be removed by incrementing
 
 In the example below, `v1alpha1` does not have `duration` field but `v1alpha2` does. So we need to add the field `duration` to `v1alpha1` so that when downgrading from `v1alpha2` to `v1alpha1`, both the `v1alpha1` versions are the same.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bd7506ae-34b1-4f41-a656-b7df61572fb9/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API8.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/17c40a1c-524d-4aa8-a478-f540ba5312f1/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API9.png)
 
 ### Rule 3
 
@@ -223,7 +224,7 @@ In the example below, `v1alpha1` does not have `duration` field but `v1alpha2` d
 
 If `v2alpha1` is released, `v1` will not be deprecated until `v2` goes through its complete lifecycle and becomes a stable release.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee6e5ba7-4570-4d1b-912f-9ec71007dc1e/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API10.png)
 
 ### Rule 4a
 
@@ -235,11 +236,11 @@ If `v2alpha1` is released, `v1` will not be deprecated until `v2` goes through i
 
 Deprecated (old) alpha versions need not be supported in the next releases.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/49c9a542-fe4b-40aa-a799-e24156a9d176/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API11.png)
 
 Deprecated beta versions only need to be supported till 3 releases (see `v1beta1`). Also according to Rule 4b, `v1` becomes the preferred version only after the next release and not in its first release.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/227a70c3-5166-4f9f-a21c-f5fb0a7b44e6/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API12.png)
 
 ### Rule 4b
 
@@ -248,13 +249,13 @@ Deprecated beta versions only need to be supported till 3 releases (see `v1beta1
 
 When `v1beta2` is released, `v1beta1` is still the preferred version (between the lines) even though it is deprecated. Only in the next release will `v1beta2` become the preferred version.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/70f98e5a-b844-43e9-9837-71c07568bfcb/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API13.png)
 
 ### Upgrading the version of a K8s manifest
 
 `kubectl convert -f nginx-old.yaml --output-version apps/v1 > nginx-new.yaml`   - this requires the installation of `kubectl convert` tool from K8s.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bbc31921-32e3-4f18-bfc4-ffc2802e066d/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Kube_rest_API13.png)
 
 # Securing Nodes and Cluster
 
@@ -271,7 +272,7 @@ When `v1beta2` is released, `v1beta1` is still the preferred version (between th
     - **What can they do (authorization)**
 - All communications within the k8s cluster between the various processes of k8s is secured by TLS encryption.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4a6bbf7b-9560-4c18-b144-3242871a066c/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_Securing_nodes_and_cluster1.png)
     
 - By default, every pod can access every other pod in the cluster. We can restrict access between them using [NetworkPolicies](https://www.notion.so/NetworkPolicies-96d8b1f5970542f5a7af579077c2f679?pvs=21).
 
@@ -288,7 +289,7 @@ When `v1beta2` is released, `v1beta1` is still the preferred version (between th
 - The security for end users is managed by the application running on Pods. So, the security for them does not need to be managed at the cluster level. Admin and Developers access the cluster through **User Accounts** whereas the bots (3rd party applications) access the cluster through [Service Account](https://www.notion.so/Service-Account-b66435734fd042e6b080e1478f66a519?pvs=21).
 - User access is managed by the `kube-apiserver`. It authenticates the request before processing it.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7d66619d-bc5f-4ef2-9130-4e258dc97879/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_Authentication1.png)
     
 - K8s does not manage user accounts natively like it manages service accounts. It relies on external solutions such as:
     - File containing list of usernames and passwords
@@ -300,19 +301,19 @@ When `v1beta2` is released, `v1beta1` is still the preferred version (between th
 
 When implementing basic authentication using a file containing usernames and passwords or token, we need to pass the `basic-auth-file` or `token-auth-file` to the `kube-apiserver` and restart it. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/60aa91bf-25c1-4141-9abe-5eeccf7547e3/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authentication2.png)
 
 If the `kube-apiserver` is running as a service, update the service config and restart it. On the other hand, if the `kube-apiserver` is deployed as a pod through KubeAdmin, update the pod definition file which will automatically recreate the new pod.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7b585645-f035-468b-9eeb-ab80d8f06d4c/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authentication3.png)
 
 The user can then authenticate to the `kube-apiserver` in the curl command as shown below.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0401dd63-fca9-4fe2-a185-a0daa6bc8a61/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authentication4.png)
 
 In case of static token file, the authentication in the curl command happens as a bearer token.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a4792740-6cb4-4a1e-bc5e-a7870f791aaf/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authentication5.png)
 
 We need to use volume mounting to store the password file in a location on the host and pass it to the `kube-apiserver` pod (in case of KubeAdmin setup)
 
@@ -372,7 +373,8 @@ Authorize users by specifying the allowed permissions for every user or group. T
 
 Later, if we want to modify the permissions for a set of users, we need to edit the permissions for all those users and restart the KubeAPIServer. Therefore, ABAC is difficult to manage.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3abd2a13-164f-40cc-a6bc-1f735caf8c9e/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authorization1.png)
+
 
 ### Role **Based Access Control (RBAC)**
 
@@ -380,13 +382,13 @@ Instead of defining permissions for each user or group as with ABAC, we define r
 
 Later, if we want to modify the permissions of a role, we can do it once and it will reflect for all the users who are associated to that role.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3457f9ca-ac95-4c3b-8eca-affa553ab188/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authorization2.png)
 
 ### Webhook
 
 We can outsource authorization to a 3rd party solution (eg. **Open Policy Agent**) outside the K8s cluster using webhooks. K8s will make a request to the the external authorization server with the information about the user and their access requirements and let the authorization server decide whether or not the user should be allowed.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/350cbe55-5ac4-46d7-9653-eaa0b42d1b1b/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authorization3.png)
 
 # Setting Authorization Modes
 
@@ -397,9 +399,9 @@ We can outsource authorization to a 3rd party solution (eg. **Open Policy Agent*
     For example: If a user makes a request, it cannot be processed by the node authorizer, so it denies the request. The request is then forwarded to RBAC which processes the request and allows it. Since the request has been allowed, it will not be forwarded to Webhook.
     
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7a5505de-f4e0-43a5-bcf6-4217dc553d1c/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authorization4.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2d73e23d-81dd-4cdb-a8af-0637e8aeaed6/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Authorization5.png)
 
 # Commands
 
@@ -549,7 +551,8 @@ roleRef:
 
 # How Auth in K8s works
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8fd8ed45-0152-44c3-bd71-ab11de5b9cea/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_how_Auth_work_in_K81.png)
+
 
 When we use the `kubectl` command, it internally sends a request to Kube ApiServer which validates the request and persists the change in the `etcd` store for the controller to get invoked and take the right action.
 
@@ -557,7 +560,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
 
 # Admission Controllers
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8fd8ed45-0152-44c3-bd71-ab11de5b9cea/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Admin_controllers1.png)
 
 - **Admission Controllers validate or modify the incoming request before executing them.** Many admission controllers are pre-built in the k8s cluster and are enabled by default.
 - Example usage:
@@ -570,7 +573,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
 
 `NamespaceExists` admission controller rejects a request to create a resource in a namespace that doesn’t exist. This way, it validates the request.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1ebfb385-3c42-474b-b4a0-9b554c6ec230/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_Admin_controllers2.png)
 
 ### Mutating Admission Controller
 
@@ -590,7 +593,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
     
     `kube-apiserver -h | grep enable-admission-plugins` 
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7d2f70af-cdac-436f-aa8f-702a91930b0f/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_Admin_controllers3.png)
     
 - **Enable/Disable admission controllers:**
     
@@ -598,14 +601,15 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
     
     To disable admission controllers, use `--disable-admission-plugins` flag in the same way.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1fad0580-3fa5-4d67-9fad-9ee52960c316/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_Admin_controllers4.png)
 
 
   # TLS in Kubernetes
 
 ## Intro
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/70d8cde4-f9d2-4d2f-8bf4-e0968456f1e1/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_TLS_in_Kubernetes1.png)
+
 
 - The communication between the different nodes in the cluster, between the different components of k8s, between a user and the cluster, etc. must be encrypted using TLS.
 - There must be at least one CA in the cluster for signing TLS certificates.
@@ -613,7 +617,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
 
 ## TLS Certificates
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f4be1769-767c-4ba7-bec5-4f7140cc12cb/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_TLS_in_Kubernetes2.png)
 
 [KubeAPI Server](https://www.notion.so/KubeAPI-Server-5a11ac27599b409a8e432675780d11ee?pvs=21), [ETCD](https://www.notion.so/ETCD-305488fa760a458b975adecab21022d6?pvs=21), and [Kubelet](https://www.notion.so/Kubelet-4ba7a09077064494a8f74868b6e1eebf?pvs=21) act like servers that are contacted by clients. So, they generate server certificates. [Kube Scheduler](https://www.notion.so/Kube-Scheduler-2ad8b62f2911478190431df9c1464dc9?pvs=21), [Kube Controller Manager](https://www.notion.so/Kube-Controller-Manager-987e77b4189748ba9aebffee21b2d7e5?pvs=21) and [Kube Proxy](https://www.notion.so/Kube-Proxy-f90a9d6e9d6342b4a70054815c546817?pvs=21), contact the KubeAPI server. So, they generate client certificates. 
 
@@ -670,7 +674,7 @@ The `/CN` field should be as follows for the following:
     
     Peer certificates need to be configured when ETCD server has multiple instances for high availability.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c26c2ac7-e6ef-4af4-84c2-6889d3c35003/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_ETCD_server.png)
     
 - KubeAPI Server - `kube-apiserver`
     
@@ -678,17 +682,17 @@ The `/CN` field should be as follows for the following:
     
     `openssl req -new -key apiserver. key -subj "/CN=kube-apiserver" -out apiserver.csr -config openssl.cnf`
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/99586d1b-a0be-412b-9687-c56f48401cd4/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_kubeapi_server.png)
     
     The key, certificate and the CA certificate needs to be configured while starting the KubeAPI server. We also need to specify the key, certificate and the CA certificate when the KubeAPI server acts as a client to connect to the ETCD server and Kubelet service.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c4a0992c-92bb-4780-8c4a-f1ea46614f29/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_kubeapi_server2.png)
     
 - Kubelet - `<node-name>`
     
     The kubelet service runs on every node. So, separate key-certificate pairs must be created for every node. Since the Kubelet is an HTTP server, the key and certificate must be configured before starting it.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0f4d40f3-627b-4e2f-967b-d7095e60ce88/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_security/k8_Kubelet_server.png)
     
 
 ## Using Client Certificates
@@ -723,7 +727,7 @@ users:
 
 Run the `openssl x509 -in certificate.crt -text -noout` command to view the certificate details including the subject, validity, issuer and alternative DNS names and IP addresses.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/09c85acc-e0bb-4347-a5e2-cb770012ddfe/Untitled.png)
+![Unhealthy Nodes](Images/k8_security/k8_TLS_in_Kubernetes3.png)
 
 ## Certificates API
 
