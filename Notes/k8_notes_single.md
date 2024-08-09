@@ -309,22 +309,23 @@ spec:
 # Unhealthy Nodes
 
 If a node in the cluster goes down, the `kube-controller-manager` waits for **5 mins (default, max)** for the node to come back online. If the node comes back online within 5 mins, the pods running on it are restarted and then everything works the same way.
-
+![Unhealthy Nodes](Images/k8_Admin/k8_unhealthy_nodes1.png)
 If the node doesn’t come back online within 5 mins, it is considered unhealthy and all the pods running on it that were associated with replicasets are spawned on other nodes. Any pod on that node that was not associated with any replicaset dies with the node. 
 
 The time for which the `kube-controller-manager` waits before declaring a node unhealthy is called **pod eviction timeout** and it is configured in the `kube-controller-manager`. If the node comes back online after the pod eviction timeout, it has no pod running on it.
-
+![Unhealthy Nodes](Images/k8_Admin/k8_unhealthy_nodes2.png)
 
 
 # OS Upgrades
 
 To perform OS upgrade or maintenance on a node, first drain it using `k drain <node-name>`. This will terminate the running pods on the node, spawn them on other nodes and mark the node as **cordon**, meaning no pods can be scheduled on it. The above command will not work if there are pods on the node that are not associated with any replicaset, as these pods will not be spawned on any other node. We’ll have to use `--force` option to terminate such pods forcefully.
-
+![OS Upgrades](Images/k8_Admin/k8_OS_Upgrades1.png)
 Now, perform the upgrade or maintenance. After that, uncordon the node using k uncordon <node-name>. This will make the node schedulable again. 
-
+![OS Upgrades](Images/k8_Admin/k8_OS_Upgrades2.png)
 We can manually cordon a node to prevent new pods from being scheduled on it by running k cordon <node-name>. This does not remove already running pods on the node.
-
+![OS Upgrades](Images/k8_Admin/k8_OS_Upgrades3.png)
 # Cluster Version Upgrade
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade1.png)
 - When we download a K8s release, the 5 core components shown on the left in the image above are at the same version.
 - The K8s components can be at different versions. The `kube-apiserver` must be at the highest version compared to other components, except `kubectl` which can be one minor version above.
 - Upgrading the version of a cluster basically means upgrading the version of various K8s components running in the cluster.
@@ -335,27 +336,27 @@ We can manually cordon a node to prevent new pods from being scheduled on it by 
 ## Upgrading the master node
 
 First the master node is upgraded, during which the control plane components are unavailable. The worker nodes keep functioning and the application is up. While the master node is getting updated, all management functions are down. We cannot run `kubectl` commands as `kube-apiserver` is down. If a pod were to crash, a new one will not be spawned as the `kube-controller-manager` is down.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade2.png)
 ## Upgrading worker nodes
 
 Once the master node has been upgraded, we need to upgrade the worker nodes (upgrade the k8s components running on them). As the worker nodes serve traffic, there are various strategies to upgrade them.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade3.png)
 ### Strategy 1: All at once
 
 Upgrade all the worker nodes at once. This will lead to downtime as no pods will be running during the upgrade.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade4.png)
 ### Strategy 2: One at a time
 
 Move the pods of the first node to the remaining nodes and upgrade the first node. Then repeat the same for the rest of the nodes.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade5.png)
 ### Strategy 3: Add new nodes
 
 Add a new worker node with the latest k8s components running on it, drain the first node and then terminate it. Repeat the same for other nodes.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade6.png)
 ## Upgrading a cluster managed by KubeAdmin
 
 To view the version details of the cluster along with the latest k8s release, run `kubeadm upgrade plan` command on the master node.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_Cluster_version_Upgrade7.png)
 Let’s say we want to upgrade the cluster version from `v1.11.0` to `v1.13.0`. Since we can only upgrade one minor version at a time, we’ll first upgrade to `v1.12.0`. 
 
 ### Upgrading the master node
@@ -444,12 +445,13 @@ Production grade clusters can be either setup from scratch (turnkey solution) or
 ### API Server
 
 The **API Server** is just a REST API server, it can be kept running on both the masters in an **active-active mode**. To distribute the incoming requests to both the KubeAPI servers, use a load balancer like `nginx` in front and point the `kubectl` utility to the load balancer (by configuring [KubeConfig](https://www.notion.so/KubeConfig-c99bacd10778413fbcb4f580dd0b9dbe?pvs=21)).
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_cluster_design1.png)
 ### Controller Manager and Scheduler
 
 The **Controller Manager** and the **Scheduler** look after the state of the cluster and make necessary changes. Therefore to avoid duplicate processing, they run in an **active-passive mode**.
 
 The instance that will be the active one is decided based on a **leader-election** approach. The two instances compete to lease the endpoint. The instance that leases it first gets to be the master for the lease duration. The active instance needs to renew the lease before the deadline is reached. Also, the passive instance retries to get a lease every `leader-elect-retry-period`. This way if the current active instance crashes, the standby instance can become active.
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_cluster_design2.png)
 
 ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a8d81837-9faf-46aa-9997-5924af0b532c/Untitled.png)
 
@@ -470,13 +472,13 @@ kube-scheduler --leader-elect true [other options]
 ### ETCD
 
 The **ETCD Server** can be present in the master node (**stacked topology**) or externally on other servers (**external ETCD topology**). Stacked topology is easier to setup and manage but if both the master nodes are down, then all the control plane components along with the state of the cluster (ETCD servers) will be lost and thus redundancy will be compromised.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_cluster_design3.png)
 Regardless of the topology, both the API server instances should be able to reach both the ETCD servers as it is a distributed database.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_cluster_design4.png)
 ETCD is distributed datastore, which means it replicates the data across all its instances. It ensures **strongly consistent writes by electing a leader ETCD instance (master) which processes the writes**. If the writes go to any of the slave instances, they are forwarded to the master instance. Whenever writes are processed, the master ensures that the data is updated on all of the slaves. **Reads can take place on any instance.**
 
 When setting up the ETCD cluster for HA, use the `initial-cluster` option to configure the ETCD peers in the cluster.
-
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_cluster_design5.png)
 ETCD instances elect the leader among them using **RAFT protocol**. If the leader doesn’t regularly notify the other instances of its role regularly, it is assumed to have died and a new leader is elected.
 
 A write operation is considered complete only if it can be written to a majority (**quorum**) of the ETCD instances (to ensure that a write goes through if a minority of ETCD instances goes down). If a dead instance comes back up, the write is propagated to it as well.
@@ -487,7 +489,7 @@ A write operation is considered complete only if it can be written to a majority
 
 Considering 1 ETCD instance per master node, **it is recommended to have odd number of master nodes in the cluster.** This is because, during a network segmentation, there is higher changes of quorum being met for one of the network segments.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4344c547-82a1-4f73-b51e-2d1cab522f39/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_cluster_design6.png)
 
 Since 1 and 2 nodes don’t provide any fault tolerance, the minimum number of nodes for fault tolerance is 3. Also, the even number of nodes can leave the cluster without quorum in certain network partitions. So, the most commonly used node count is 3 (good for most use cases) and 5 (higher fault tolerance). 
 
@@ -541,17 +543,17 @@ Kind is a tool, maintained by the K8s community, which allows us to deploy a K8s
 
 Single server setups use a local SQLite DB to store the cluster state. Embedded SQLite is not supported in multi-server configuration. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3306f3fb-fdc4-48aa-8e83-490232ec037e/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_ClusterSetup_k3s_1.png)
 
 ### High Availability Setup
 
 When using embedded etcd DB, we need at least 3 server nodes (master nodes). This is required to have quorum in case a master node goes down.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ad7d047c-c7d9-4282-97a1-9ee085f7b5a3/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_ClusterSetup_k3s_2.png)
 
 If instead, we’re using an external DB to store the cluster state, we can get away with 2 master nodes.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bead0117-96e9-4360-8cb5-aff71993c8dc/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_ClusterSetup_k3s_3.png)
 
 ## Setting up a single node cluster
 
@@ -590,7 +592,7 @@ Since K3s clusters come with ‣ ingress controller pre-installed, we can direct
 
 ## Worker Nodes
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/452dc72d-c049-4f71-b9fa-8e2025f54e0e/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/K8_Node1.png)
 
 - These nodes do the actual work so they need to have more resources
 - Each worker node has multiple pods running on it
@@ -606,12 +608,12 @@ Since K3s clusters come with ‣ ingress controller pre-installed, we can direct
         - Image
             - Kubeproxy forwards requests to the DB pod running on the same node to minimize network overhead.
                 
-                ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/316cbcf2-401c-4ec7-87e6-ef199bf84adf/Untitled.png)
+                ![Unhealthy Nodes](Images/k8_Objects/k8_Node2.png)
                 
 
 ## Master Nodes
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/781c65f7-6cf4-40bd-8613-10806f875524/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Node3.png)
 
 - Control the cluster state & manage worker nodes
 - Need less resources as they don't do the actual work
@@ -622,18 +624,18 @@ Since K3s clusters come with ‣ ingress controller pre-installed, we can direct
         - Cluster gateway (acts as the entry point into the cluster)
         - Can be used for authentication
         
-        ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c5940aed-14dd-48c9-b59f-71b1c6c82803/Untitled.png)
+        ![Unhealthy Nodes](Images/k8_Objects/k8_Node4.png)
         
     - **Scheduler**
         - Decides the node where the new pod should be scheduled and sends a request to the Kubelet to start a pod.
         
-        ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/dbc7359e-dd5f-4926-9cd8-b525ad323018/Untitled.png)
+        ![Unhealthy Nodes](Images/k8_Objects/K8_Node5.png)
         
     - **Controller**
         - Detects state changes like crashing of pods
         - If a pod dies, it requests scheduler to schedule starting up of a new pod
         
-        ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cd8f1316-c16f-4845-bb56-fd4e12e145c8/Untitled.png)
+        ![Unhealthy Nodes](Images/k8_Objects/K8_Node6.png)
         
     - **etcd**
         - Key-value store of the cluster state (also known as cluster brain)
@@ -651,7 +653,7 @@ Since K3s clusters come with ‣ ingress controller pre-installed, we can direct
 - **Each pod gets an internal IP address** for communicating with each other (virtual network created by K8)
 - If a pod is restarted (maybe after the application running on it crashed), its IP address may change
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4c2e9f57-62ed-41da-b452-e004c1235410/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Pod1.png)
 
 <aside>
 ⛔ Sometimes we need to have a helper container for the application container. In that case, we can run both containers inside the same pod. This way both containers share the same storage and network and can reference each other as `localhost`
@@ -660,7 +662,7 @@ Without using Pods, making a setup like this would be difficult as we need to ma
 
 Although, most use cases of pods revolve around single containers, it provides flexibility to add a helper container in the future as the application evolves.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/aa93d68e-3e1e-47c5-be7c-bcd91909f678/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Pod2.png)
 
 </aside>
 
@@ -751,7 +753,7 @@ spec:
 
 # Deployment
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3b557804-128f-4d2c-afb5-2cd0038d746c/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Deployment1.png)
 
 - **Provides the capability to upgrade the instances seamlessly using rolling updates, rollback to previous versions seamlessly, undo, pause and resume changes as required.**
 - Abstraction over [ReplicaSet](https://www.notion.so/ReplicaSet-df784dc061344ab6a5a83f1f61652f1c?pvs=21)
@@ -789,7 +791,7 @@ spec:
 
 # Deployment Strategy
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/6bea30ab-259f-4ef2-9289-98661435d916/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Deployment2.png)
 
 There are two deployment strategies:
 
@@ -801,7 +803,7 @@ There are two deployment strategies:
 - When you first create a deployment, it triggers a rollout which creates the first revision of the deployment. Every subsequent update to the deployment triggers a rollout which creates a new revision of the deployment. This keeps a track of the deployment and helps us rollback to a previous version of the deployment if required.
 - **When we upgrade the version of a deployment, a new replica set is created** under the hood where the new pods are spawned while bringing down pods from the old replica set one at a time, following a rolling update strategy. We can see the new and old replica sets by running `k get replicasets`
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/14a3e225-ab17-4160-bad3-df50151875f7/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Objects/k8_Deployment3.png)
     
 - `k rollout status deployment <deployment-name>` - view the status of rollout for a deployment
 - `k rollout history deployment <deployment-name>` - view the history of rollouts for a deployment
@@ -813,7 +815,7 @@ There are two deployment strategies:
 - Rollback a deployment - `k rollout undo deployment <deployment-name>`
 - Rollback a deployment to a specific revision - `k rollout undo deployment <deployment-name> --to-revision=1`
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/56ce73da-26b2-41de-99e7-ccfcdc1cf864/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Deployment4.png)
 
 
 # Service
@@ -834,12 +836,12 @@ There are two deployment strategies:
 
 Consider an application running in a pod on a node which is on the same network as our laptop, we could SSH into the node and then reach the application by its IP on the Kubernetes network (`10.244.0.0/16`). But doing an SSH into the node to access the application is not the right way. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/6e5589df-1fa4-4743-82b7-2ffe3f04d293/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_service1.png)
 
 - NodePort service maps a port on the node (Node Port) to a port on the pod (Target Port) running the application. This will allow us to reach the application on the node’s IP address.
 - Allowed range for NodePort: 30,000 - 32,767
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9a6d869a-5911-4521-b9f9-22e8a6c2cadd/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_service2.png)
 
 ```yaml
 apiVersion: v1
@@ -864,17 +866,17 @@ spec:
 
 - If there are multiple target pods on the same node, the service will automatically load balance to these pods.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d6678804-800e-4b99-bb79-3d1e16320bf1/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_service3.png)
 
 - If the target pods span multiple nodes in the cluster, as the NodePort service will span the entire cluster, it will map the target port on the pods to the same node port on all the nodes in the cluster, even the nodes that don’t have the application pod running in them. This will make the application available on the IP addresses of all of the nodes in the cluster.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/145f1b12-fb16-4baa-b7d1-2d9148cc43e2/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_service4.png)
 
 # ClusterIP Service
 
 - Consider a 3-tier application running on a K8s cluster. How will different tiers communicate with each other? Using IPs to communicate is not good as it can change when the pods are restarted. Also, how can we load balance if we have multiple pods in the same tier.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/701c4854-d3cb-4455-a6ad-d90a84b3113c/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_service5.png)
 
 - ClusterIP Service groups similar pods and provides a single interface to access those pods. We don’t have to access the pods using their IP addresses.
 - Enables access to the service from within the K8s cluster (internal)
@@ -905,7 +907,7 @@ spec:
 
 - Consider the case where we have to route the incoming traffic to the front-end of two applications. If the applications are using NodePort service, they can be accessed at different node ports using the IPs of any of the nodes. But, we cannot use higher order ports for our application as they are non standard. Also, how do we load balance to the nodes (the application can be accessed at any of the nodes by using their IP addresses). For these, we need to use a Load Balancer service.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/17ffc263-7cce-4f9a-af51-89e7f0982a5a/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_service6.png)
 
 - LoadBalancer Service leverages the native layer-4 load balancer of the cloud provider to expose the application on a single IP (NLB’s IP) and load balance to the nodes. So, if a node becomes unhealthy, the NLB will redirect the incoming requests to a healthy node.
 - Any NodePort service can be converted to use the cloud provider’s load balancer by setting `type: LoadBalancer` in the config.yaml file.
@@ -940,7 +942,7 @@ spec:
 
 # Namespaces
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7040c4d8-3fe4-4fb2-8f62-126d11982770/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Namespace1.png)
 
 - Namespaces isolate resources within a K8s cluster.
 - K8s creates a `default` namespace when the cluster is created. This default namespace is used to create resources.
@@ -952,7 +954,7 @@ spec:
 - Resources within a namespace can refer to each other by their names.
 - For cross namespace communication, a resource needs to specify the namespace as shown below.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c5691031-69f8-4fb9-93c7-a68a29a4b591/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Namespace2.png)
 
 `cluster.local` - domain name for the cluster
 
@@ -1015,11 +1017,11 @@ Some objects in K8s are not scoped under a namespace, but are scoped under the w
 
 ### Namespace scoped
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a5238583-28f0-478a-bede-6bf85fda1ef2/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Namespace3.png)
 
 ### Cluster Scoped
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c3d3c2e5-619c-4a29-9879-619d7e30efa9/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Namespace4.png)
 
 
 NetworkPolicies
@@ -1031,6 +1033,7 @@ The resulting network policy for a pod is the union of all the network policies 
 Network policies are firewalls applied directly to the matching pods (not through services).
 3-Tier Web Application Example
 In a 3 tier web application, the users should be able to reach the web service on port 80 or the API service on port 5000. Also, the DB service should only be reachable by the API service. 
+![Unhealthy Nodes](Images/k8_Objects/k8_Network_policies1.png)
 
 These are the following traffic that should be allowed for each pod (service):
 Web service
@@ -1043,6 +1046,7 @@ DB service
 Ingress on port 3306 from API pod
 Network Policy for DB pod
 Label the DB pod as role: db and API pod as role: api. We can use these labels in the NetworkPolicy definition file to allow ingress traffic on port 3306 only from API pods. We don’t need to create an egress rule for the response from the the DB pod to the API pod as it is allowed automatically.
+![Unhealthy Nodes](Images/k8_Objects/k8_Network_policies2.png)
 
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -1086,7 +1090,7 @@ spec:
 					port: 3306
 ​
 To restrict access to the DB pod to happen within the current namespace, select the namespace using namespaceSelector. In the example, only the API pods of prod namespace can connect to the DB pod in the prod namespace.
-
+![Unhealthy Nodes](Images/k8_Objects/k8_Network_policies3.png)
 Allowing Ingress Traffic from outside the Cluster
 If we want to allow a backup server (192.168.5.10) present outside the cluster but within the same private network to pull data from the DB pod to perform backups, we can specify its IP address in the DB pod’s ingress rule. Now, the DB pod allows ingress traffic on port 3306 from both API pod and the backup server.
 ```
@@ -1333,7 +1337,7 @@ data:
 ## Creating a local volume on the node
 
 The pod definition file below creates a volume at location `/data` on the node and mounts it to the location `/opt` in the container. The volume is created at the pod level and it mounted at the container level.
-
+![Unhealthy Nodes](Images/k8_Objects/k8_volume1.png)
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -1355,7 +1359,7 @@ spec:
 				type: Directory
 ```
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/850dbd9d-6f10-402f-9ffb-a44f38d98989/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/K8_Node1.png)
 
 ## Creating a shared remote volume on EBS
 
@@ -1389,7 +1393,7 @@ spec:
 
 # Persistent Volumes
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/54ebfd71-77e8-4814-935c-552fd4978045/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_volume2.png)
 
 - **Persistent Volumes (PVs) are cluster wide storage volumes configured by the admin.** This allows the volumes to be centrally configured and managed by the admin. The developer creating application (pods) can claim these persistent volumes by creating **Persistent Volume Claims (PVCs).**
 - Once the PVCs are created, K8s binds the PVCs with available PVs based on the requests in the PVCs and the properties set on the volumes. **A PVC can bind with a single PV only** (there is a 1:1 relationship between a PV and a PVC). If multiple PVs match a PVC, we can label a PV and select it using label selectors in PVC.
@@ -1497,11 +1501,11 @@ spec:
 
 In [Volume](https://www.notion.so/Volume-3afba1ed481249dea86d81f0a522aeed?pvs=21) we discussed how we can create a PV and a PVC to bind to that PV and finally configure a pod to use the PVC to get a persistent volume. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0226e759-29e4-4c2e-8c8a-91b0df1ebe9b/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Storage_classes.png)
 
 The problem with this approach is that we need to manually provision the storage on a cloud provider or storage device before we can create a PV using it. This is called as **static provisioning.**
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5327cd36-1365-4264-9cf9-0f7e28aa7427/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Storage_classes2.png)
 
 ## Dynamic Provisioning
 
@@ -1550,7 +1554,7 @@ parameters:
 
 Using these properties, we can create classes of storage such as silver, gold & platinum with increasing levels of replication and speed.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3f44768c-d811-47f2-8fff-f5cdbc5a41f4/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Storage_classes3.png)
 
 ### Reclaim Policy and Volume Binding Mode
 
@@ -1626,7 +1630,7 @@ In the diagram, green service is load balancing the read requests coming from th
 
 The DNS names of the pods are `<pod-name>.<headless-service-dns>`
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/34347868-5313-46d3-8a7e-20857cb5009b/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_statefulset.png)
 
 ```yaml
 apiVersion: v1
@@ -1649,7 +1653,7 @@ spec:
 
 Attaching a PVC (with a storage class configured) to the database pods will provision a PV and mount all the pods to that PV. This means all the pods (instances of the application) will share the same storage volume. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cfd42167-75f2-47ec-a8fd-f029879fa17b/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_statefulset2.png)
 
 Note that reads/writes by multiple instances at the same time is not supported by all the volume types.
 
@@ -1687,7 +1691,7 @@ spec:
 
 We can configure the StatefulSet such that each database pod creates a PVC (with a storage class configured) to provision a dedicated PV for itself. This will allow us to implement read-replicas at the database layer.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/fe60c621-2d74-4b4c-9c1e-4f3a0ae9bcbd/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_statefulset3.png)
 
 This can be done by moving the PVC definition as a template into the StatefulSet definition file under the StatefulSet `spec` section. We can specify multiple PVC templates under the `volumeClaimTemplates` section.
 
@@ -1845,7 +1849,7 @@ spec:
 
 # Ingress
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/df5a4a71-7b62-4246-8105-0e097cf3c9e1/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_ingress1.png)
 
 It’a single entry point into the cluster. It’s basically a layer-7 load balancer that is managed within the K8s cluster. It provides features like **SSL termination**, and **request based routing** to different services. 
 
@@ -1949,7 +1953,7 @@ spec:
 
 In the example below, we have a single hostname (1 rule) and 2 paths.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/85c6fa38-9dbd-4fdf-8e08-c4603066296c/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_ingress2.png)
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -1982,7 +1986,7 @@ If none of the rules or paths match, then the user will be redirected to the def
 
 In case of routing to different hostnames, we need separate rules.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0b54c1e7-8240-49f3-adee-7a5992febc11/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_ingress3.png)
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -2059,7 +2063,7 @@ Kubernetes has two types of accounts:
 
 When a service account is created, it generates a token to be used by the external application to authenticate to the K8s API. It then creates a secret object and stores the token as a secret. The secret object is then linked to the service account. The token can be viewed by describing the secret object. This token can be used as a Bearer token when making calls to the [KubeAPI Server](https://www.notion.so/KubeAPI-Server-5a11ac27599b409a8e432675780d11ee?pvs=21).
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3dfccf86-fa72-450d-bd04-e400600e9726/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Service_account1.png)
 
 ### Internal Application
 
@@ -2069,11 +2073,11 @@ If the application accessing the K8s API is a part of the K8s cluster itself, th
 
 For every namespace, a `default` service account is created automatically. When a pod is created in a namespace, the default service account is automatically associated with the pod and its token (secret object) is automatically mounted to the pod as a volume mount at location `/var/run/secrets/kubernetes.io/serviceaccount`. This can be viewed by describing the pod. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2933248f-637b-4318-b261-aed75ddf16fb/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Service_account3.png)
 
 The secret is mounted as 3 separate files out of which token contains the access token in plain text format.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/835b2eb7-0eaa-44b8-9247-36a51b7f45e9/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Service_account4.png)
 
 <aside>
 💡 The default service account only has permissions to run basic K8s API queries.
@@ -2123,7 +2127,7 @@ From v1.24 onwards, K8s has stopped auto-creating tokens for service accounts. E
 
 To generate a token for a service account, run the command `k create token <service-account-name>`. This token has a default validity of 1 hour which can be modified by passing some arguments when creating the token. The token is then mounted to the pod as a projected volume.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bb1c9649-e459-4caa-b8ee-05326e330bca/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Service_account5.png)
 
 ## Access Control for Service Accounts
 
@@ -2235,7 +2239,7 @@ Creating a customer resource in K8s such as `FlightTicket` doesn’t do much. It
 
 **DaemonSet automatically schedules a single replica of a pod on all the nodes in the cluster.** It can be though of as a way to run a daemon process on all the nodes in the cluster. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d0cf7ec6-a9f4-415e-8414-bcb0fc099ed5/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_daemonset.png)
 
 KubeProxy can be deployed as a DaemonSet in the cluster so that the `kube-proxy` process runs as a single pod on all of the nodes. Networking solutions, log collectors and monitoring agents are often deployed as DaemonSets on the cluster.
 
@@ -2273,7 +2277,7 @@ spec:
 
 [Kubelet](https://www.notion.so/Kubelet-4ba7a09077064494a8f74868b6e1eebf?pvs=21) can independently manage pods on worker nodes without relying on other K8s components. Kubelet can be configured to look for k8s manifest files in a directory on the node. It can then automatically create, update and manage pods on the node based on the manifests files present in the directory. These pods are called **static pods**. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b8bfe925-b64a-4d42-89a5-76bf768e2c94/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_static_pods1.png)
 
 If any static pod crashes, Kubelet will attempt to restart it. To delete a static pod, delete its manifest file from the directory.
 
@@ -2288,11 +2292,11 @@ To view the static pods running on a worker node, run `sudo crictl ps` on that n
 
 To configure the pod manifest path in the `kubelet` service, use the below highlighted configuration in the `kubelet` service. This can be viewed for a running `kubelet` service by running `ps -aux | grep kubelet`. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/9a8b951c-3301-4693-b037-902a68370a77/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_static_pods2.png)
 
 Another option is to refer `staticPodPath` from the kubelet config file (`--config` option) in the `kubelet` service.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/67ab2dc2-7a52-4633-9cd7-fa7cc43826b5/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_static_pods3.png)
 
 ## Static Pods in a Cluster
 
@@ -2308,7 +2312,7 @@ Since static pods don’t depend on the control plane, we can use them to deploy
 
 Let’s say we are setting up a multi-master cluster. Start by installing the `kubelet` service on all of the nodes. Then, place the K8s manifests of the remaining control plane components in the `staticPodPath` in every node. Kubelet will bring up all the pods and if any of them fails, it will be restarted by Kubelet automatically.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e409ed6e-2e7b-433f-9259-de71c17a5f21/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_static_pods4.png)
 
 <aside>
 💡 **KubeAdm** uses this approach to set up the control plane.
@@ -2569,7 +2573,7 @@ livenessProbe:
 
 # Monitoring
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/004d4511-7332-42e3-bd6b-88cfe60acfcc/Untitled.png)
+![Unhealthy Nodes](Images/k8_Observability/k8_Monitoring0.png)
 
 Monitoring involves collecting information regarding the the cluster and its performance metrics such as memory utilization, disk utilization, network utilization etc. Monitoring data is retrieved from the [Kubelet](https://www.notion.so/Kubelet-4ba7a09077064494a8f74868b6e1eebf?pvs=21) service running on each node.
 
@@ -2608,13 +2612,13 @@ Use [**kube-prometheus-stack**](https://github.com/prometheus-community/helm-cha
 
 In the example below, a service monitor is created to scrape the `api-service` every 30 seconds for metrics on port `web` (3000) at path `/swagger-stats/metrics`. The name of the scraping job will be `node-api` in this case.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/615a751c-9612-4080-820f-313c27e162ae/Untitled.png)
+![Unhealthy Nodes](Images/k8_Observability/k8_Monitoring1.png)
 
 ### `PrometheusRule`
 
 To add new rules to Prometheus, we can create a `PrometheusRule` object (CRD created by the Prometheus Operator). The `kube-prometheus-stack` helm chart automatically creates some prometheus rules in the cluster.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c0b5ae71-da69-4e13-bd96-8841d65de1e3/Untitled.png)
+![Unhealthy Nodes](Images/k8_Observability/k8_Monitoring2.png)
 
 ### `AlertManagerRule`
 
@@ -2627,7 +2631,7 @@ alertmanagerConfigSelector:
     resource: prometheus
 ```
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cdc2fcfd-adde-46c2-81d6-aa79d404fd44/Untitled.png)
+![Unhealthy Nodes](Images/k8_Observability/k8_monitoring3.png)
 
 # Logging
 Logging in containerized applications or Kubernetes involves running an agent (LogStash, FluentD, etc.) on the host (k8s nodes) to push the logs to a central database (ElasticSearch, Loki, etc.).
@@ -2685,7 +2689,8 @@ This is required to allow Promtail to push logs to Loki. Otherwise, it gives an 
     - **Users** - User accounts with which the user has access to the clusters. These user accounts may have different privilege on different clusters.
     - **Contexts** - Define which user account will be used to access which cluster.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/5291d3fe-98d6-4a0e-8a42-6d8f6ff315bb/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_kubeconfig.png)
+  
     
 - KubeConfig defines what user accounts have access to what clusters. It is not a configuration to create user accounts or clusters. It just defines which user account will be used by the `kubectl` command to access which cluster. This way we don’t have to specify these parameters in the `kubectl` commands.
 
@@ -2813,19 +2818,19 @@ users:
 
 All the core functionalities exist in this API group. All the resources (functionalities) are scattered in this group.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/74a4aa63-96fc-41d3-a341-cd8105786475/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API1.png)
 
 ## Named API group (`/apis`)
 
 The named API group is organized into subgroups (resources) based on the category. The newer features in k8s and going forward all the incoming features will be made available in this group. Several actions (verbs) can be performed on the resources.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c08bd6c6-989e-4af5-98e5-6b9dac81f766/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API2.png)
 
 # Authenticating to Kube-ApiServer
 
 Most of the API endpoint will require you to authenticate to the `kube-apiserver`. This means passing the login credentials in the curl command. Alternatively, you can setup a proxy client to by running the command `kubectl proxy` which will automatically proxy your API requests and add the credentials from the [KubeConfig](https://www.notion.so/KubeConfig-c99bacd10778413fbcb4f580dd0b9dbe?pvs=21)  file on your local system. So, you no longer need to pass the authentication details in every curl command.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f458ab4f-eac0-4786-84be-26b66c55bdc2/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API3.png)
 
 ### Examples
 
@@ -2834,15 +2839,15 @@ Most of the API endpoint will require you to authenticate to the `kube-apiserver
 
 # API Versions
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f2f5dd32-5e1c-4034-b57c-b2cc761bdce6/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API4.png)
 
 An API group can have multiple versions supported at the same time. Either of these API versions can be used to create a resource. But, when you query the resource it checks for it in the **Preferred API version**. Also, when a resource is created in an API version other than the **Storage API version**, it is converted to the storage API version before storing in the `etcd` database. Usually, the stable API version is the Preferred and Storage API version.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/e75988f7-e91c-4c7d-a5e3-b52912205d1e/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API5.png)
 
 Since alpha versions are not enabled by default, we can enable them by editing the `kube-apiserver`'s config.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7cb720d3-2dce-49b4-ac23-8a077382d8c8/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API6.png)
 
 ### C**heck the preferred version for an API**
 
@@ -2880,7 +2885,7 @@ The output will be like this:
 
 In the example below, the resource `webinar` can only be removed by incrementing the version from `v1alpha1` to `v1alpha2`. But both the versions will be supported because otherwise, all the usage of `v1alpha1` will have to be incremented. But, the preferred/supported version can be `v1alpha2`.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cf527467-6f74-4710-908a-26891d1a2383/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API7.png)
 
 ### Rule 2
 
@@ -2889,9 +2894,9 @@ In the example below, the resource `webinar` can only be removed by incrementing
 
 In the example below, `v1alpha1` does not have `duration` field but `v1alpha2` does. So we need to add the field `duration` to `v1alpha1` so that when downgrading from `v1alpha2` to `v1alpha1`, both the `v1alpha1` versions are the same.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bd7506ae-34b1-4f41-a656-b7df61572fb9/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API8.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/17c40a1c-524d-4aa8-a478-f540ba5312f1/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API9.png)
 
 ### Rule 3
 
@@ -2900,7 +2905,7 @@ In the example below, `v1alpha1` does not have `duration` field but `v1alpha2` d
 
 If `v2alpha1` is released, `v1` will not be deprecated until `v2` goes through its complete lifecycle and becomes a stable release.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ee6e5ba7-4570-4d1b-912f-9ec71007dc1e/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API10.png)
 
 ### Rule 4a
 
@@ -2912,11 +2917,11 @@ If `v2alpha1` is released, `v1` will not be deprecated until `v2` goes through i
 
 Deprecated (old) alpha versions need not be supported in the next releases.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/49c9a542-fe4b-40aa-a799-e24156a9d176/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API11.png)
 
 Deprecated beta versions only need to be supported till 3 releases (see `v1beta1`). Also according to Rule 4b, `v1` becomes the preferred version only after the next release and not in its first release.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/227a70c3-5166-4f9f-a21c-f5fb0a7b44e6/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API12.png)
 
 ### Rule 4b
 
@@ -2925,13 +2930,13 @@ Deprecated beta versions only need to be supported till 3 releases (see `v1beta1
 
 When `v1beta2` is released, `v1beta1` is still the preferred version (between the lines) even though it is deprecated. Only in the next release will `v1beta2` become the preferred version.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/70f98e5a-b844-43e9-9837-71c07568bfcb/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API13.png)
 
 ### Upgrading the version of a K8s manifest
 
 `kubectl convert -f nginx-old.yaml --output-version apps/v1 > nginx-new.yaml`   - this requires the installation of `kubectl convert` tool from K8s.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bbc31921-32e3-4f18-bfc4-ffc2802e066d/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Kube_rest_API13.png)
 
 # Securing Nodes and Cluster
 
@@ -2948,7 +2953,7 @@ When `v1beta2` is released, `v1beta1` is still the preferred version (between th
     - **What can they do (authorization)**
 - All communications within the k8s cluster between the various processes of k8s is secured by TLS encryption.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4a6bbf7b-9560-4c18-b144-3242871a066c/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_Securing_nodes_and_cluster1.png)
     
 - By default, every pod can access every other pod in the cluster. We can restrict access between them using [NetworkPolicies](https://www.notion.so/NetworkPolicies-96d8b1f5970542f5a7af579077c2f679?pvs=21).
 
@@ -2965,7 +2970,7 @@ When `v1beta2` is released, `v1beta1` is still the preferred version (between th
 - The security for end users is managed by the application running on Pods. So, the security for them does not need to be managed at the cluster level. Admin and Developers access the cluster through **User Accounts** whereas the bots (3rd party applications) access the cluster through [Service Account](https://www.notion.so/Service-Account-b66435734fd042e6b080e1478f66a519?pvs=21).
 - User access is managed by the `kube-apiserver`. It authenticates the request before processing it.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7d66619d-bc5f-4ef2-9130-4e258dc97879/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_Authentication1.png)
     
 - K8s does not manage user accounts natively like it manages service accounts. It relies on external solutions such as:
     - File containing list of usernames and passwords
@@ -2977,19 +2982,19 @@ When `v1beta2` is released, `v1beta1` is still the preferred version (between th
 
 When implementing basic authentication using a file containing usernames and passwords or token, we need to pass the `basic-auth-file` or `token-auth-file` to the `kube-apiserver` and restart it. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/60aa91bf-25c1-4141-9abe-5eeccf7547e3/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authentication2.png)
 
 If the `kube-apiserver` is running as a service, update the service config and restart it. On the other hand, if the `kube-apiserver` is deployed as a pod through KubeAdmin, update the pod definition file which will automatically recreate the new pod.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7b585645-f035-468b-9eeb-ab80d8f06d4c/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authentication3.png)
 
 The user can then authenticate to the `kube-apiserver` in the curl command as shown below.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0401dd63-fca9-4fe2-a185-a0daa6bc8a61/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authentication4.png)
 
 In case of static token file, the authentication in the curl command happens as a bearer token.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/a4792740-6cb4-4a1e-bc5e-a7870f791aaf/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authentication5.png)
 
 We need to use volume mounting to store the password file in a location on the host and pass it to the `kube-apiserver` pod (in case of KubeAdmin setup)
 
@@ -3049,7 +3054,8 @@ Authorize users by specifying the allowed permissions for every user or group. T
 
 Later, if we want to modify the permissions for a set of users, we need to edit the permissions for all those users and restart the KubeAPIServer. Therefore, ABAC is difficult to manage.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3abd2a13-164f-40cc-a6bc-1f735caf8c9e/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authorization1.png)
+
 
 ### Role **Based Access Control (RBAC)**
 
@@ -3057,13 +3063,13 @@ Instead of defining permissions for each user or group as with ABAC, we define r
 
 Later, if we want to modify the permissions of a role, we can do it once and it will reflect for all the users who are associated to that role.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3457f9ca-ac95-4c3b-8eca-affa553ab188/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authorization2.png)
 
 ### Webhook
 
 We can outsource authorization to a 3rd party solution (eg. **Open Policy Agent**) outside the K8s cluster using webhooks. K8s will make a request to the the external authorization server with the information about the user and their access requirements and let the authorization server decide whether or not the user should be allowed.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/350cbe55-5ac4-46d7-9653-eaa0b42d1b1b/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authorization3.png)
 
 # Setting Authorization Modes
 
@@ -3074,9 +3080,9 @@ We can outsource authorization to a 3rd party solution (eg. **Open Policy Agent*
     For example: If a user makes a request, it cannot be processed by the node authorizer, so it denies the request. The request is then forwarded to RBAC which processes the request and allows it. Since the request has been allowed, it will not be forwarded to Webhook.
     
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7a5505de-f4e0-43a5-bcf6-4217dc553d1c/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authorization4.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2d73e23d-81dd-4cdb-a8af-0637e8aeaed6/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Authorization5.png)
 
 # Commands
 
@@ -3226,7 +3232,8 @@ roleRef:
 
 # How Auth in K8s works
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8fd8ed45-0152-44c3-bd71-ab11de5b9cea/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_how_Auth_work_in_K81.png)
+
 
 When we use the `kubectl` command, it internally sends a request to Kube ApiServer which validates the request and persists the change in the `etcd` store for the controller to get invoked and take the right action.
 
@@ -3234,7 +3241,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
 
 # Admission Controllers
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8fd8ed45-0152-44c3-bd71-ab11de5b9cea/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Admin_controllers1.png)
 
 - **Admission Controllers validate or modify the incoming request before executing them.** Many admission controllers are pre-built in the k8s cluster and are enabled by default.
 - Example usage:
@@ -3247,7 +3254,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
 
 `NamespaceExists` admission controller rejects a request to create a resource in a namespace that doesn’t exist. This way, it validates the request.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1ebfb385-3c42-474b-b4a0-9b554c6ec230/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_Admin_controllers2.png)
 
 ### Mutating Admission Controller
 
@@ -3267,7 +3274,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
     
     `kube-apiserver -h | grep enable-admission-plugins` 
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7d2f70af-cdac-436f-aa8f-702a91930b0f/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_Admin_controllers3.png)
     
 - **Enable/Disable admission controllers:**
     
@@ -3275,14 +3282,15 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
     
     To disable admission controllers, use `--disable-admission-plugins` flag in the same way.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1fad0580-3fa5-4d67-9fad-9ee52960c316/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_Admin_controllers4.png)
 
 
   # TLS in Kubernetes
 
 ## Intro
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/70d8cde4-f9d2-4d2f-8bf4-e0968456f1e1/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_TLS_in_Kubernetes1.png)
+
 
 - The communication between the different nodes in the cluster, between the different components of k8s, between a user and the cluster, etc. must be encrypted using TLS.
 - There must be at least one CA in the cluster for signing TLS certificates.
@@ -3290,7 +3298,7 @@ The Kube ApiServer uses certificates configured in the [KubeConfig](https://www.
 
 ## TLS Certificates
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f4be1769-767c-4ba7-bec5-4f7140cc12cb/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_TLS_in_Kubernetes2.png)
 
 [KubeAPI Server](https://www.notion.so/KubeAPI-Server-5a11ac27599b409a8e432675780d11ee?pvs=21), [ETCD](https://www.notion.so/ETCD-305488fa760a458b975adecab21022d6?pvs=21), and [Kubelet](https://www.notion.so/Kubelet-4ba7a09077064494a8f74868b6e1eebf?pvs=21) act like servers that are contacted by clients. So, they generate server certificates. [Kube Scheduler](https://www.notion.so/Kube-Scheduler-2ad8b62f2911478190431df9c1464dc9?pvs=21), [Kube Controller Manager](https://www.notion.so/Kube-Controller-Manager-987e77b4189748ba9aebffee21b2d7e5?pvs=21) and [Kube Proxy](https://www.notion.so/Kube-Proxy-f90a9d6e9d6342b4a70054815c546817?pvs=21), contact the KubeAPI server. So, they generate client certificates. 
 
@@ -3347,7 +3355,7 @@ The `/CN` field should be as follows for the following:
     
     Peer certificates need to be configured when ETCD server has multiple instances for high availability.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c26c2ac7-e6ef-4af4-84c2-6889d3c35003/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_ETCD_server.png)
     
 - KubeAPI Server - `kube-apiserver`
     
@@ -3355,17 +3363,17 @@ The `/CN` field should be as follows for the following:
     
     `openssl req -new -key apiserver. key -subj "/CN=kube-apiserver" -out apiserver.csr -config openssl.cnf`
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/99586d1b-a0be-412b-9687-c56f48401cd4/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_kubeapi_server.png)
     
     The key, certificate and the CA certificate needs to be configured while starting the KubeAPI server. We also need to specify the key, certificate and the CA certificate when the KubeAPI server acts as a client to connect to the ETCD server and Kubelet service.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c4a0992c-92bb-4780-8c4a-f1ea46614f29/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_kubeapi_server2.png)
     
 - Kubelet - `<node-name>`
     
     The kubelet service runs on every node. So, separate key-certificate pairs must be created for every node. Since the Kubelet is an HTTP server, the key and certificate must be configured before starting it.
     
-    ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0f4d40f3-627b-4e2f-967b-d7095e60ce88/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_Security/k8_Kubelet_server.png)
     
 
 ## Using Client Certificates
@@ -3400,7 +3408,7 @@ users:
 
 Run the `openssl x509 -in certificate.crt -text -noout` command to view the certificate details including the subject, validity, issuer and alternative DNS names and IP addresses.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/09c85acc-e0bb-4347-a5e2-cb770012ddfe/Untitled.png)
+![Unhealthy Nodes](Images/k8_Security/k8_TLS_in_Kubernetes3.png)
 
 ## Certificates API
 
@@ -3426,7 +3434,7 @@ spec:
 
 All the `CertificateSigningRequest` objects can be viewed by the cluster admins using `k get csr` command. Then admin can approve any CSR by running `k certificate approve <csr-name>`.
 
-Environment Variables
+![image](https://github.com/user-attachments/assets/0c6be1ec-b726-43b8-830e-13b27576c308)Environment Variables
 Environment variables can be passed to containers running inside the pod. Environment variables are defined at the container level. It is the same as running docker run with -e flag.
 💡
 Environment variables can also be passed using ConfigMap and Secret 
@@ -3504,15 +3512,16 @@ Every pod requires some resources (CPU, memory and disk space). Based on the pod
 <aside>
 💡 If none of the nodes have the required resources, the scheduler keeps the pod in the pending state.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b218fc7d-cc5b-41d2-8aae-1ba91069be67/Untitled.png)
+    ![Unhealthy Nodes](Images/k8_concepts/k8_ResourceRequirements1.png)
+
 
 </aside>
 
 ### CPU and Memory metrics
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/1a32fc99-f629-454a-a956-9c8464b34156/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_ResourceRequirements2.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c2baf62c-1330-421b-b0dc-d2c1e165c8b0/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_ResourceRequirements3.png)
 
 ### Resource Requests
 
@@ -3555,7 +3564,7 @@ spec:
 <aside>
 💡 When a K8s cluster is setup. A taint is automatically applied to the master node to prevent any pod from being scheduled on the master node. This is to prevent other processes from starving the master processes required to run the K8s cluster.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/aa86d1df-3135-43d4-a800-ad243aa5d1ab/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Taints_Tolerations1.png)
 
 </aside>
 
@@ -3694,21 +3703,21 @@ spec:
 
 We want to deploy the colored pods on matching nodes and ensure that other pods don’t get deployed on colored nodes. We also don’t want the colored pods to get deployed on other nodes.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/7608093f-a85c-4fb3-bff7-a0cc6b6f31ba/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_combining_taints_tolerations_NodeAffinity1.png)
 
 If we taint the colored nodes accordingly and apply tolerations to the pods, we can prevent non-matching and other pods from being deployed on the colored nodes. However, we cannot guarantee that a colored pod will not get deployed on a non-tainted node.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/449e6e99-8ae6-4c8b-abdc-7763bba929cc/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_combining_taints_tolerations_NodeAffinity2.png)
 
 If we label the nodes according to their color and use node affinity to make colored pods schedule on the corresponding colored nodes, the colored pods will always be deployed on matching nodes. However, this does not guarantee that other pods will not be deployed on colored nodes.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b926c8b1-beab-4581-97db-12ec912e49e9/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_combining_taints_tolerations_NodeAffinity3.png)
 
 We can combine both taints & tolerations and node affinity to achieve the desired result. Taints and tolerations ensure that other pods don’t get scheduled on colored nodes. Node affinity ensures that colored pods get scheduled on the right nodes.
 
 # Controllers
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/73c151b8-9573-4bae-997f-3598e88ff9cd/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_controllers1.png)
 
 Controller is a process in k8s which runs in the background and monitors the resource config in `etcd` for state changes. When the state of the resource changes, it makes necessary changes to the cluster to match the new state.
 
@@ -3719,6 +3728,9 @@ All of the k8s resource types have controllers that monitor their state in the `
 When a deployment is created, updated or deleted in K8s, the up-to-date manifest is stored in the `etcd` database. The deployment controller continuously monitors the state of the deployment objects in the `etcd` store. When the deployment is first created, the deployment controller creates a [ReplicaSet](https://www.notion.so/ReplicaSet-df784dc061344ab6a5a83f1f61652f1c?pvs=21) object in the `etcd`, after which the ReplicaSet controller creates the necessary Pod objects in the `etcd`.
 
 Multi-Container Pods
+![Unhealthy Nodes](Images/k8_concepts/k8_multi_container_pods1.png)
+
+
 
 Multi-container pods are used in cases where it’s better to have separate code for some added functionality along with the application code. Example: log agent alongside the application to collect logs and send them to a centralized log server.
 Containers inside a pod share the same:
@@ -3778,19 +3790,19 @@ spec:
 
 Let’s say we want to deploy a clothing e-commerce application on K8s. We package the application in a Docker container and use [Deployment](https://www.notion.so/Deployment-aaa3756097d1452a9d42cc3e493a36c6?pvs=21) to deploy 3 pods of this application. Since we want the users to be able to access our application, we create a NodePort [Service](https://www.notion.so/Service-56c166dcc5624cd89cc6e86f66cf278d?pvs=21) to expose the application on port 38080 of the public IP of the node. The service takes care of load balancing among the pods.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2e88239a-ac51-4917-a5c8-a1ee52d9d7b8/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Deploy_prod_grade_application1.png)
 
 ### DNS and Reverse Proxy
 
 We configure a DNS server to point to the public IP of the node. This way, users don’t have to type in the IP address. Also, since NodePorts have to be greater than 30000, we need to have a reverse proxy (eg. **MetalLB**) to forward requests coming in on port 80 to the NodePort 38080. This way, users can access the application using the URL directly without having to type in the IP or port of the node. **This solution is good to implement on-prem.**
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ad02d27b-ff10-4c20-b674-7be64005be3a/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Deploy_prod_grade_application2.png)
 
 ## Cloud Solution
 
 If the application is deployed on a cloud provider like GCP, instead of configuring a reverse proxy along with a NodePort service, we can make the service as LoadBalancer. In this case, K8s will internally create a NodePort service and provision a network load balancer of the cloud provider to route the incoming traffic to the given port on all the nodes. We can then configure the DNS server to point to the NLB’s IP. This means, all incoming requests will be routed to one of the application pods running on any of the nodes. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ed736975-bb62-49ce-94cb-02455e24a72d/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Deploy_prod_grade_application3.png)
 
 ### Hosting multiple applications on the same cluster
 
@@ -3803,12 +3815,12 @@ Both of these applications will share the same cluster going forward. We need to
 
 We can see that hosting multiple configurations on the same cluster can become expensive and difficult to manage.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/86795f97-5597-4470-9b69-1fe5484dea40/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Deploy_prod_grade_application4.png)
 
 ### Ingress
 
 We can move the entire ALB setup inside the K8s cluster using [Ingress](https://www.notion.so/Ingress-9fe828fdf67b42d09b0da2a4579ad636?pvs=21), which is basically a layer-7 load balancer managed inside the K8s cluster. **The ingress requires a LoadBalancer Service to be exposed as a public IP.** However, this is a one time setup. We don’t need additional cloud native load balancers. All the layer-7 load balancing, routing and SSL termination will take place inside the K8s ingress.
-
+![Unhealthy Nodes](Images/k8_concepts/k8_Deploy_prod_grade_application5.png)
 # Blue-Green and Canary Deployments
 
 Blue-Green and Canary deployments are not supported by default in K8s. We need to implement them manually.
@@ -3819,13 +3831,18 @@ In blue-green deployments, while the old version (blue) is still running, we bri
 
 To implement blue-green deployment in k8s, we deploy both blue and green version as [Deployment](https://www.notion.so/Deployment-aaa3756097d1452a9d42cc3e493a36c6?pvs=21). The blue deployment has all the pods labelled as `version: v1` whereas green deployment has all the pods labelled as `version: v2`. When we want to shift to the green deployment, we just update the service to route to pods with label `version: v2`. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8dfbf63f-c94c-4787-ae34-2a587fdabc8c/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_blueGreen_Canary_deployments1.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/aac3ce77-9830-450a-93ea-d401371645b3/Untitled.png)
+
+
+![Unhealthy Nodes](Images/k8_concepts/k8_blueGreen_Canary_deployments2.png)
 
 ## Canary Deployment in K8s
 
 To implement canary deployment, create a new [Deployment](https://www.notion.so/Deployment-aaa3756097d1452a9d42cc3e493a36c6?pvs=21) (canary deployment) with label `version: v2` containing just 1 pod. Also, have a common label between the old and new deployments and use that label in the service to direct traffic to both the deployments. Since the canary deployment only has 1 pod, it will only serve a portion of the traffic. Once we are sure that the canary deployment is working fine, we can scale up the canary deployment to bring up the desired number of pods and delete the primary deployment.
+![Unhealthy Nodes](Images/k8_concepts/k8_blueGreen_Canary_deployments2.png)
+
+
 
 # Kubernetes Networking
 
@@ -3833,15 +3850,15 @@ To implement canary deployment, create a new [Deployment](https://www.notion.so/
 
 Each node must have at least one interface connected to a common network. Each interface must have an IP address configured. Every node must have a unique hostname as well as a unique MAC address.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3e612d8a-49d7-4ba9-afb4-b536d6480ac6/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking1.png)
 
 Various ports need to be opened (firewall and security group settings must be configured) on the master and worker nodes as shown in the diagram. The worker nodes expose services for external access on ports 30000 - 32767 (for `NodePort` services). 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/d22f735f-49e4-4d03-9a86-110ec0e98f21/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking2.png)
 
 In a multi-master setup, the ETCD clients need to communicate on port 2380, so that needs to be open as well.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/096702f7-d12f-43a9-95a9-770272e87b27/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking3.png)
 
 ## Pod Networking
 
@@ -3849,7 +3866,7 @@ Now that we have configured networking at the cluster level as explained in the 
 
 We can use a CNI compatible networking solution (plugin) to achieve this. Basically, the CNI plugin ensures that every pod on the cluster (irrespective of the node it is running on), gets a unique IP address.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8f73bb6e-a618-4ba9-acb2-7acb684c23e1/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking4.png)
 
 After setting up the networking solution:
 
@@ -3859,15 +3876,15 @@ After setting up the networking solution:
 
 Networking solutions create a bridge network on each node with a different subnet mask and attach every pod to the bridge network on its node. This way, every pod in the cluster gets a unique IP address. Also, pods on the same node can now communicate with each other using IP addresses. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4ac331ed-1883-4b61-a123-a33fdb3867ac/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking5.png)
 
 At this stage, pods cannot communicate across nodes. If the blue pod (`10.244.1.2`) tries to ping the purple pod (`10.244.2.2`), it won’t be able to since it is on a different subnet. It then routes the request to NODE1’s IP (`192.168.1.11`) as it is the default gateway for the bridge network on NODE1. Even NODE1 has no idea where the subnet `10.244.2.0/24` is as it is a private network on NODE2. So, we need a router configured as the default gateway on each node to tell them where to forward the requests going to pods on various bridge networks.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4485d30e-da86-4687-84e5-40ae6a332467/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking6.png)
 
 This way, the bridge networks running on each node coalesce together to form a large network with CIDR `10.244.0.0/16`.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f6ec868b-7295-4ff5-8281-54493d8b3ea5/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking7.png)
 
 ## CNI Standards
 
@@ -3875,11 +3892,11 @@ Networking solutions for K8s must follow the **Container Networking Interface (C
 
 CNI is configured on the [Kubelet](https://www.notion.so/Kubelet-4ba7a09077064494a8f74868b6e1eebf?pvs=21) service. Here, we define the `cni-bin-dir` (default `/opt/cni/bin`) which contains the supported CNI plugins as executable binaries. We also define `cni-conf-dir` (default `/etc/cni/net.d/`) which contains the different config files for CNI to be used by Kubelet.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/0217c0be-9210-490c-a32f-8559ad30ae11/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking8.png)
 
 ## WeaveNet - Pod Networking Solution
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4a029570-6e05-45ff-bc0f-0061b8882337/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking9.png)
 
 WeaveNet is a CNI compatible networking solution plugin for K8s. Instead of configuring a router to route traffic between nodes, it deploys an agent on each node. These agents communicate with each other to share information about their node. Each agent stores the entire network topology, so they know the pods and their IPs on the other nodes.
 
@@ -3891,7 +3908,7 @@ Weave can be deployed as a deamonset on each node. For installation steps, refer
 
 ## Service Networking
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/59cc6e97-a465-4919-b744-548dad7c3a13/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking10.png)
 
 In a cluster, pods communicate with each other through services, using their DNS names or IP addresses, instead of using the pod’s IP which can change if it restarts. While a pod runs on a single node, a service spans the entire cluster and can be reached from any of the nodes. In the above image, the purple service is of type `NodePort`, which means it can be accessed at a given port from any node in the cluster. 
 
@@ -3899,7 +3916,7 @@ Services are allocated IPs from a range configured in the **KubeAPI** server usi
 
 Services in K8s are not resources like pods. When a service object is created, the **KubeProxy** running on each node configures the IPTable rules on all of the nodes to forward the requests coming to the `IP:port` of the service to the `IP:port` of the backend pod configured in the service. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/45b651ab-3c6f-4596-a9d9-330e7b2de95b/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_Kubernetes_networking11.png)
 
 ## Important Commands
 
@@ -3914,9 +3931,9 @@ Services in K8s are not resources like pods. When a service object is created, t
 
 K8s sets up a built-in DNS server on the cluster to resolve pod and service names to their IPs. Prior to K8s v1.12, it was `kube-dns`. From v1.12 onwards, **CoreDNS** is the recommended DNS solution. When setting up the cluster using **KubeAdmin**, CoreDNS is deployed as a deployment of **2 replicas** for high availability in the `kube-system` namespace.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/eee8de59-ea45-4551-ae98-d92d73f2f68b/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_DNS_in_Kubernetes1.png)
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/b0bad5aa-31e9-4bf6-ab5f-e710ba208a96/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_DNS_in_Kubernetes2.png)
 
 Each CoreDNS pod runs the `Coredns` executable which uses the config `/etc/coredns/Corefile`. The `Corefile` is passed to the deployment as a ConfigMap named `coredns` so that it can be easily edited.
 
@@ -3926,13 +3943,13 @@ To allow other pods to reach the CoreDNS pods, a service named `kube-dns` is cre
 
 Whenever a service is created, an entry is added to the DNS server to map the service name to its IP. Now, any pod within the same namespace can reach the service by its name. Pods in some other namespace can reach the service at `<service-name>.<namespace>` where `namespace` is the namespace in which the service is present.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/2994bb5b-be72-4ebc-918d-b4d0d4f90503/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_DNS_in_Kubernetes3.png)
 
 ## DNS for Pods
 
 **DNS records are not created for pods by default.** But we can enable it. In this case, the pod name is generated by replacing `.` with `-` in the IP address of the pod.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/4e208290-3aee-45f7-a68d-ba02b3f389fc/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_DNS_in_Kubernetes4.png)
 
 
 Private Container Registry
@@ -4013,7 +4030,8 @@ It allows a single scheduler to have multiple profiles, each with a different se
 
 We can also write custom plugins and use them.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c43200f2-928b-4942-a02a-37cea855744e/Untitled.png)
+![Unhealthy Nodes](Images/k8_concepts/k8_multiple_Schedulers.png)
+
 
 # KubeAPI Server
 
@@ -4102,7 +4120,7 @@ spec:
 
 ## Scheduling Plugins
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/975875e2-2f50-466f-99a2-b5fe1e86a889/Untitled.png)
+![Unhealthy Nodes](Images/k8_controlplane_components/K8_KUBESCHEDULER1.png)
 
 The scheduler has 4 phases, each having a set of plugins that operate at that phase.
 
@@ -4127,7 +4145,7 @@ The scheduler has 4 phases, each having a set of plugins that operate at that ph
 - If the cluster is set up using **KubeAdmin**, the `kube-proxy` is automatically deployed as a daemonset (one pod on every node) in the `kube-system` namespace.
 - Excellent explanation of how KubeProxy works - [Demystifying kube-proxy | Mayank Shah](https://mayankshah.dev/blog/demystifying-kube-proxy/)
 
-- # Tips
+# Tips
 
 - Use `--dry-run=client` to create a pod template as the starting point. Example:
 `k run webapp --image=my-webapp --dry-run=client -o yaml > webapp.yaml`
@@ -4162,10 +4180,10 @@ The scheduler has 4 phases, each having a set of plugins that operate at that ph
 
 The declarative `kubectl apply` command checks the **local config file** (stored on the local system), the **live config** (stored in K8s memory) and the **last applied config** (stored in the live config as an annotation in JSON format), to decide what changes are to be made to take the system to the desired state. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/f62d289c-18de-4446-a2f4-6c97cead4280/Untitled.png)
+![API Version](Images/k8_extras/k8_declarative_commands1.png)
 
 Last applied config is required to find out if something has been removed in the local config file.
-
+![API Version](Images/k8_extras/k8_declarative_commands2.png)
 # CKA
 
 - Kubectl Reference - [Kubectl Reference Docs (kubernetes.io)](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands)
