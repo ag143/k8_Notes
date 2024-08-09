@@ -33,10 +33,10 @@
 
 The declarative `kubectl apply` command checks the **local config file** (stored on the local system), the **live config** (stored in K8s memory) and the **last applied config** (stored in the live config as an annotation in JSON format), to decide what changes are to be made to take the system to the desired state. 
 
-![API Version](Images/k8_intro/k8_declarative_commands1.png)
+![API Version](Images/k8_extras/k8_declarative_commands1.png)
 
 Last applied config is required to find out if something has been removed in the local config file.
-![API Version](Images/k8_intro/k8_declarative_commands2.png)
+![API Version](Images/k8_extras/k8_declarative_commands2.png)
 # CKA
 
 - Kubectl Reference - [Kubectl Reference Docs (kubernetes.io)](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands)
