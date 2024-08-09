@@ -85,7 +85,7 @@ spec:
 
 ## Scheduling Plugins
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/975875e2-2f50-466f-99a2-b5fe1e86a889/Untitled.png)
+![Unhealthy Nodes](Images/k8_controlplane_components/K8_KUBESCHEDULER1.png)
 
 The scheduler has 4 phases, each having a set of plugins that operate at that phase.
 
