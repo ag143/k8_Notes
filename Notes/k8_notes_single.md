@@ -1,6 +1,6 @@
 # Intro
 
-- Kubernetes is an open-source **container orchestration** tool developed by Google.
+- Kubernetes is an open-source **container orchestration** tool developed by Google
 - It helps us manage containerized applications in different deployment environments
 
 ## Container Orchestration
