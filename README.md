@@ -6,3 +6,4 @@
 * [Control Plane Components](./Notes/k8_controlplane_components.md)
 * [Admin](./Notes/k8_Admin.md)
 * [Extras](./Notes/k8_extras.md)
+* [All in Single Notes](Notes/k8_notes_single.md)
