@@ -1048,6 +1048,7 @@ Network Policy for DB pod
 Label the DB pod as role: db and API pod as role: api. We can use these labels in the NetworkPolicy definition file to allow ingress traffic on port 3306 only from API pods. We don’t need to create an egress rule for the response from the the DB pod to the API pod as it is allowed automatically.
 ![Unhealthy Nodes](Images/k8_Objects/k8_Network_policies2.png)
 
+```
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -1066,7 +1067,9 @@ spec:
 			ports:
 				- protocol: TCP
 					port: 3306
-​
+​```
+
+```
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -1088,11 +1091,13 @@ spec:
 			ports:
 				- protocol: TCP
 					port: 3306
-​
+​```
+
 To restrict access to the DB pod to happen within the current namespace, select the namespace using namespaceSelector. In the example, only the API pods of prod namespace can connect to the DB pod in the prod namespace.
 ![Unhealthy Nodes](Images/k8_Objects/k8_Network_policies3.png)
 Allowing Ingress Traffic from outside the Cluster
 If we want to allow a backup server (192.168.5.10) present outside the cluster but within the same private network to pull data from the DB pod to perform backups, we can specify its IP address in the DB pod’s ingress rule. Now, the DB pod allows ingress traffic on port 3306 from both API pod and the backup server.
+
 ```
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -1115,8 +1120,10 @@ spec:
 				- protocol: TCP
 					port: 3306
 ​```
+
 Allowing Egress Traffic to outside the Cluster
 If the DB pod needs to push a backup to a backup server (192.168.5.10) present outside the cluster but within the same private network, we can create an egress rule on the DB pod’s NetworkPolicy.
+
 ```
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -1153,6 +1160,8 @@ Storing config data along with the pod/deployment definition file is not a good 
 Should be used to store parameters that are not secrets
 ⚠️
 The data stored in the ConfigMap, when the container (pod) is created, is used to set the environment variables. If the ConfigMap gets updated later, the pod will continue to use the old values. We need to re-create the pods by performing a rollout (k rollout restart deployment <deployment-name>) on the deployment to make the new pods use the new data.
+
+```
 ConfigMap definition file
 apiVersion: v1
 kind: ConfigMap
@@ -1176,8 +1185,11 @@ data:
       **/
     }
 ​
+```
 Using ConfigMap in Pods
 Passing the entire ConfigMap of key-value pairs to ENV
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -1190,8 +1202,12 @@ spec:
 			envFrom:
 				- configMapRef:
 					  name: app-config
+
+```
 ​
 Passing a single key-value pair from the ConfigMap to ENV
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -1207,8 +1223,11 @@ spec:
 						configMapKeyRef:
 							name: app-config
 							key: USERNAME
+```
 ​
 Passing a config file as ConfigMap (eg. nginx.conf) by mounting the ConfigMap as a volume
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -1225,7 +1244,8 @@ spec:
     - name: nginx-config-volume
       configMap:
         name: nginx-config
-​
+​```
+
 The mount path must be a directory. If passing a config file, only pass the full path, not the filename.
 
 
@@ -3169,7 +3189,8 @@ Providing access to the cluster admin to create or delete nodes in a cluster.
 Providing access to the storage admin to create or delete PVs
 Creating a ClusterRole and binding it to a User
 The definition file is very similar to that of Role except the kind and the resources.
----
+
+```
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -3179,7 +3200,9 @@ rules:
 		resources: ["nodes"]
 		verbs: ["list", "get", "create", "delete"]
 
----
+```
+
+```
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -3192,9 +3215,12 @@ roleRef:
 	kind: ClusterRole
 	name: cluster-admin
 	apiGroup: rbac.authorization.k8s.io
+```
 ​
 ClusterRole for Namespace-scoped Resources
 ClusterRoles and ClusterRoleBindings can also be used to allow users to access namespace scoped resources. This way, the user can access that resource across the cluster in any namespace. 
+
+```
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -3203,9 +3229,11 @@ rules:
 	- apiGroups: [""]
 		resources: ["pods"]
 		verbs: ["list", "get", "create", "delete"]
-​
+​```
+
 Example ClusterRole and ClusterRoleBinding for Storage Admin
----
+
+```
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -3214,8 +3242,9 @@ rules:
   - apiGroups: [""]
     resources: ["persistentvolumes", "storageclasses"]
     verbs: ["list", "get", "create", "delete"]
+```
 
----
+```
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -3228,7 +3257,7 @@ roleRef:
   kind: ClusterRole
   name: storage-admin
   apiGroup: rbac.authorization.k8s.io
-
+```
 
 # How Auth in K8s works
 
@@ -3739,6 +3768,8 @@ Network - can refer each other as localhost
 Storage - can access the same storage volumes
 All the containers inside a pod must keep running for the pod to remain in running state. If any of them fails, the pod restarts.
 Sharing volumes in multi-container pods
+
+```
 apiVersion: v1
 kind: Pod
 metadata:
@@ -3758,6 +3789,7 @@ spec:
 			volumeMounts:
 		    - name: shared-vol
 		      mountPath: /logs
+```
 ​
 Init Containers
 Init containers run once during the pod initialization and they terminate after that. When a POD is first created, the init container is run, and the process in the init container must run to a completion before the real container hosting the application starts. We can have multiple init containers. In that case each init container is run one at a time in sequential order. If any of the init containers fail to complete, Kubernetes restarts the Pod repeatedly until all the init containers succeed.
@@ -3984,7 +4016,7 @@ We can have additional schedulers on top of the default scheduler to schedule po
 
 The default scheduler has the name `default-scheduler` by default, which is configured in the `scheduler-config.yaml` present at `/etc/kubernetes/manifests/`. 
 
-```yaml
+```
 apiversion: kubescheduler.config.k8s.io/v1
 kind: KubeSchedulerConfiguration
 profiles:
@@ -3993,7 +4025,7 @@ profiles:
 
 When creating other schedulers, we can change the scheduler name in the scheduler config. Every scheduler in a cluster must have a unique name. 
 
-```yaml
+```
 apiversion: kubescheduler.config.k8s.io/v1
 kind: KubeSchedulerConfiguration
 profiles:
@@ -4009,7 +4041,7 @@ profiles:
 
 When we have multiple scheduler, we can specify which scheduler to use for a pod or a deployment. If a scheduler is not specified, the pod will remain in pending state.
 
-```yaml
+```
 apiVersion: v1
 kind: Pod
 metadata:
