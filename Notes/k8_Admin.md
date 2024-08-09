@@ -235,17 +235,17 @@ Kind is a tool, maintained by the K8s community, which allows us to deploy a K8s
 
 Single server setups use a local SQLite DB to store the cluster state. Embedded SQLite is not supported in multi-server configuration. 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/3306f3fb-fdc4-48aa-8e83-490232ec037e/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_ClusterSetup_k3s_1.png)
 
 ### High Availability Setup
 
 When using embedded etcd DB, we need at least 3 server nodes (master nodes). This is required to have quorum in case a master node goes down.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/ad7d047c-c7d9-4282-97a1-9ee085f7b5a3/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_ClusterSetup_k3s_2.png)
 
 If instead, we’re using an external DB to store the cluster state, we can get away with 2 master nodes.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/bead0117-96e9-4360-8cb5-aff71993c8dc/Untitled.png)
+![k8_Cluster_version_Upgrade1](Images/k8_Admin/k8_ClusterSetup_k3s_3.png)
 
 ## Setting up a single node cluster
 
