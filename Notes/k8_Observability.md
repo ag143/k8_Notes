@@ -235,7 +235,7 @@ livenessProbe:
 
 # Monitoring
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/004d4511-7332-42e3-bd6b-88cfe60acfcc/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Monitoring0.png)
 
 Monitoring involves collecting information regarding the the cluster and its performance metrics such as memory utilization, disk utilization, network utilization etc. Monitoring data is retrieved from the [Kubelet](https://www.notion.so/Kubelet-4ba7a09077064494a8f74868b6e1eebf?pvs=21) service running on each node.
 
@@ -274,13 +274,13 @@ Use [**kube-prometheus-stack**](https://github.com/prometheus-community/helm-cha
 
 In the example below, a service monitor is created to scrape the `api-service` every 30 seconds for metrics on port `web` (3000) at path `/swagger-stats/metrics`. The name of the scraping job will be `node-api` in this case.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/615a751c-9612-4080-820f-313c27e162ae/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Monitoring1.png)
 
 ### `PrometheusRule`
 
 To add new rules to Prometheus, we can create a `PrometheusRule` object (CRD created by the Prometheus Operator). The `kube-prometheus-stack` helm chart automatically creates some prometheus rules in the cluster.
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/c0b5ae71-da69-4e13-bd96-8841d65de1e3/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Monitoring2.png)
 
 ### `AlertManagerRule`
 
@@ -293,7 +293,7 @@ alertmanagerConfigSelector:
     resource: prometheus
 ```
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/cdc2fcfd-adde-46c2-81d6-aa79d404fd44/Untitled.png)
+![Unhealthy Nodes](Images/k8_Objects/k8_Monitoring3.png)
 
 # Logging
 Logging in containerized applications or Kubernetes involves running an agent (LogStash, FluentD, etc.) on the host (k8s nodes) to push the logs to a central database (ElasticSearch, Loki, etc.).
