@@ -3463,7 +3463,7 @@ spec:
 
 All the `CertificateSigningRequest` objects can be viewed by the cluster admins using `k get csr` command. Then admin can approve any CSR by running `k certificate approve <csr-name>`.
 
-![image](https://github.com/user-attachments/assets/0c6be1ec-b726-43b8-830e-13b27576c308)Environment Variables
+# Environment Variables
 Environment variables can be passed to containers running inside the pod. Environment variables are defined at the container level. It is the same as running docker run with -e flag.
 💡
 Environment variables can also be passed using ConfigMap and Secret 
