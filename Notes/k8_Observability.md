@@ -293,7 +293,7 @@ alertmanagerConfigSelector:
     resource: prometheus
 ```
 
-![Unhealthy Nodes](Images/k8_Observability/k8_Monitoring3.png)
+![Unhealthy Nodes](Images/k8_Observability/k8_monitoring3.png)
 
 # Logging
 Logging in containerized applications or Kubernetes involves running an agent (LogStash, FluentD, etc.) on the host (k8s nodes) to push the logs to a central database (ElasticSearch, Loki, etc.).
